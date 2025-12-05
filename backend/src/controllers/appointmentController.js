@@ -437,3 +437,146 @@ exports.completeAppointment = async (req, res) => {
     });
   }
 };
+
+// @desc    Add report/prescription to appointment
+// @route   POST /api/v1/appointments/:id/reports
+// @access  Private (Doctor only)
+exports.addReport = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+
+    // Check authorization - only doctor can add reports
+    if (appointment.doctor.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to add reports to this appointment'
+      });
+    }
+
+    const { 
+      diagnosis, 
+      prescriptions, 
+      reportFile 
+    } = req.body;
+
+    // Update diagnosis if provided
+    if (diagnosis) {
+      appointment.diagnosis = diagnosis;
+    }
+
+    // Add prescriptions if provided
+    if (prescriptions && Array.isArray(prescriptions)) {
+      appointment.prescriptions = prescriptions;
+    }
+
+    // Add report file if provided
+    if (reportFile) {
+      appointment.reports.push({
+        fileName: reportFile.fileName,
+        fileUrl: reportFile.fileUrl,
+        fileType: reportFile.fileType,
+        fileSize: reportFile.fileSize,
+        uploadedBy: req.user.id,
+        description: reportFile.description
+      });
+    }
+
+    await appointment.save();
+
+    // Log audit
+    await auditLogger(req.user.id, 'UPDATE', 'Appointment', appointment._id, {
+      action: 'Report/Prescription added',
+      appointmentId: appointment.appointmentId
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Report added successfully',
+      data: appointment
+    });
+  } catch (error) {
+    console.error('Error adding report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error adding report',
+      error: error.message
+    });
+  }
+};
+
+// @desc    Get appointment report details
+// @route   GET /api/v1/appointments/:id/report
+// @access  Private
+exports.getAppointmentReport = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id)
+      .populate('patient', 'firstName lastName email phone patientId dateOfBirth gender address medicalHistory')
+      .populate('doctor', 'firstName lastName email specialization')
+      .populate('reports.uploadedBy', 'firstName lastName');
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+
+    // Check authorization
+    if (appointment.doctor._id.toString() !== req.user.id && 
+        appointment.patient._id.toString() !== req.user.patientId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view this report'
+      });
+    }
+
+    // Build comprehensive report
+    const report = {
+      appointmentId: appointment.appointmentId,
+      appointmentDate: appointment.appointmentDate,
+      appointmentTime: appointment.appointmentTime,
+      status: appointment.status,
+      patient: {
+        name: `${appointment.patient.firstName} ${appointment.patient.lastName}`,
+        patientId: appointment.patient.patientId,
+        dateOfBirth: appointment.patient.dateOfBirth,
+        gender: appointment.patient.gender,
+        phone: appointment.patient.phone,
+        email: appointment.patient.email,
+        address: appointment.patient.address,
+        medicalHistory: appointment.patient.medicalHistory
+      },
+      doctor: {
+        name: `${appointment.doctor.firstName} ${appointment.doctor.lastName}`,
+        email: appointment.doctor.email,
+        specialization: appointment.doctor.specialization
+      },
+      reason: appointment.reason,
+      diagnosis: appointment.diagnosis,
+      prescriptions: appointment.prescriptions || [],
+      reports: appointment.reports || [],
+      notes: appointment.notes,
+      completedAt: appointment.completedAt
+    };
+
+    res.status(200).json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    console.error('Error fetching appointment report:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching appointment report',
+      error: error.message
+    });
+  }
+};
+

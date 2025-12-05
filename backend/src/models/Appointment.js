@@ -64,6 +64,38 @@ const appointmentSchema = new mongoose.Schema({
     ref: 'Visit'
   },
   
+  // Medical details after appointment
+  diagnosis: String,
+  
+  prescriptions: [{
+    medicationName: String,
+    dosage: String,
+    frequency: String,
+    duration: String,
+    instructions: String
+  }],
+  
+  // Lab reports and documents
+  reports: [{
+    fileName: String,
+    fileUrl: String,
+    fileType: String,
+    fileSize: Number,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    },
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    description: String
+  }],
+  
+  // Video call details
+  videoCallRoomId: String,
+  videoCallLink: String,
+  
   cancelledAt: Date,
   completedAt: Date
 }, {

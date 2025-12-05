@@ -23,7 +23,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Snackbar
+  Snackbar,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText
 } from '@mui/material';
 import {
   CalendarToday,
@@ -52,8 +57,28 @@ const Appointments = () => {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [appointmentReport, setAppointmentReport] = useState(null);
+  const [loadingReport, setLoadingReport] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [usingMockData, setUsingMockData] = useState(false);
+  
+  // New appointment form state
+  const [newAppointment, setNewAppointment] = useState({
+    patientId: '',
+    patientName: '',
+    patientPhone: '',
+    patientEmail: '',
+    appointmentDate: '',
+    appointmentTime: '',
+    duration: 30,
+    type: 'In-Person',
+    reason: '',
+    notes: ''
+  });
+  const [formErrors, setFormErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -154,6 +179,92 @@ const Appointments = () => {
     }
   };
 
+  const handleViewReport = async (appointmentId) => {
+    try {
+      setLoadingReport(true);
+      setReportDialogOpen(true);
+
+      // If using mock data, create mock report
+      if (usingMockData) {
+        const appointment = appointments.find(apt => apt._id === appointmentId);
+        if (appointment && appointment.status === 'completed') {
+          const mockReport = {
+            appointmentId: appointment.appointmentId,
+            appointmentDate: appointment.appointmentDate,
+            appointmentTime: appointment.appointmentTime,
+            status: appointment.status,
+            patient: appointment.patient,
+            doctor: {
+              name: 'Dr. Rishi Ram',
+              email: 'rishi.ram@glytchmed.com',
+              specialization: 'General Medicine'
+            },
+            reason: appointment.reason,
+            diagnosis: appointment.diagnosis || 'Patient examined. Vital signs stable. Recommended continued medication and follow-up in 2 weeks.',
+            prescriptions: appointment.prescriptions || [
+              {
+                medicationName: 'Metformin',
+                dosage: '500mg',
+                frequency: 'Twice daily',
+                duration: '30 days',
+                instructions: 'Take with meals'
+              },
+              {
+                medicationName: 'Vitamin D3',
+                dosage: '1000 IU',
+                frequency: 'Once daily',
+                duration: '30 days',
+                instructions: 'Take in the morning'
+              }
+            ],
+            reports: appointment.reports || [
+              {
+                fileName: 'Blood_Test_Report.pdf',
+                fileType: 'application/pdf',
+                fileSize: 245678,
+                uploadedAt: new Date().toISOString(),
+                description: 'Complete Blood Count (CBC) results'
+              },
+              {
+                fileName: 'X-Ray_Chest.jpg',
+                fileType: 'image/jpeg',
+                fileSize: 512340,
+                uploadedAt: new Date().toISOString(),
+                description: 'Chest X-Ray'
+              }
+            ],
+            notes: appointment.notes,
+            completedAt: appointment.appointmentDate
+          };
+          setAppointmentReport(mockReport);
+        } else {
+          setSnackbar({ 
+            open: true, 
+            message: 'No report available for this appointment', 
+            severity: 'warning' 
+          });
+          setReportDialogOpen(false);
+        }
+        setLoadingReport(false);
+        return;
+      }
+
+      // Otherwise fetch from backend
+      const response = await api.get(`/appointments/${appointmentId}/report`);
+      setAppointmentReport(response.data.data);
+      setLoadingReport(false);
+    } catch (err) {
+      console.error('Error fetching appointment report:', err);
+      setLoadingReport(false);
+      setSnackbar({ 
+        open: true, 
+        message: 'Could not load appointment report', 
+        severity: 'error' 
+      });
+      setReportDialogOpen(false);
+    }
+  };
+
   const handleCancelAppointment = async () => {
     try {
       // If using mock data, just update locally
@@ -196,6 +307,147 @@ const Appointments = () => {
         message: 'Could not cancel appointment', 
         severity: 'error' 
       });
+    }
+  };
+
+  const handleOpenScheduleDialog = () => {
+    // Reset form
+    setNewAppointment({
+      patientId: '',
+      patientName: '',
+      patientPhone: '',
+      patientEmail: '',
+      appointmentDate: '',
+      appointmentTime: '',
+      duration: 30,
+      type: 'In-Person',
+      reason: '',
+      notes: ''
+    });
+    setFormErrors({});
+    setScheduleDialogOpen(true);
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!newAppointment.patientName.trim()) {
+      errors.patientName = 'Patient name is required';
+    }
+    
+    if (!newAppointment.patientPhone.trim()) {
+      errors.patientPhone = 'Phone number is required';
+    }
+    
+    if (!newAppointment.patientEmail.trim()) {
+      errors.patientEmail = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newAppointment.patientEmail)) {
+      errors.patientEmail = 'Invalid email format';
+    }
+    
+    if (!newAppointment.appointmentDate) {
+      errors.appointmentDate = 'Date is required';
+    }
+    
+    if (!newAppointment.appointmentTime) {
+      errors.appointmentTime = 'Time is required';
+    }
+    
+    if (!newAppointment.reason.trim()) {
+      errors.reason = 'Reason for visit is required';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleScheduleAppointment = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      // If using mock data, create locally
+      if (usingMockData) {
+        const mockAppointment = {
+          _id: `mock_${Date.now()}`,
+          appointmentId: `APT${String(appointments.length + 1).padStart(3, '0')}`,
+          patient: {
+            name: newAppointment.patientName,
+            patientId: newAppointment.patientId || `P${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+            phone: newAppointment.patientPhone,
+            email: newAppointment.patientEmail
+          },
+          appointmentDate: new Date(newAppointment.appointmentDate).toISOString(),
+          appointmentTime: newAppointment.appointmentTime,
+          duration: newAppointment.duration,
+          type: newAppointment.type,
+          status: 'scheduled',
+          reason: newAppointment.reason,
+          notes: newAppointment.notes
+        };
+
+        setAppointments(prev => [...prev, mockAppointment]);
+        
+        setSnackbar({
+          open: true,
+          message: 'Appointment scheduled successfully (mock mode)',
+          severity: 'success'
+        });
+        
+        setScheduleDialogOpen(false);
+        setSubmitting(false);
+        return;
+      }
+
+      // Otherwise call backend
+      const appointmentData = {
+        patientId: newAppointment.patientId,
+        appointmentDate: newAppointment.appointmentDate,
+        appointmentTime: newAppointment.appointmentTime,
+        duration: newAppointment.duration,
+        type: newAppointment.type,
+        reason: newAppointment.reason,
+        notes: newAppointment.notes
+      };
+
+      await api.post('/appointments', appointmentData);
+      
+      setSnackbar({
+        open: true,
+        message: 'Appointment scheduled successfully',
+        severity: 'success'
+      });
+      
+      setScheduleDialogOpen(false);
+      
+      // Refresh appointments
+      fetchAppointments();
+    } catch (err) {
+      console.error('Error scheduling appointment:', err);
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || 'Could not schedule appointment',
+        severity: 'error'
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFormChange = (field, value) => {
+    setNewAppointment(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // Clear error for this field
+    if (formErrors[field]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
     }
   };
 
@@ -506,7 +758,7 @@ const Appointments = () => {
                     variant="outlined" 
                     size="small"
                     fullWidth
-                    onClick={() => handleViewDetails(appointment._id)}
+                    onClick={() => handleViewReport(appointment._id)}
                   >
                     View Report
                   </Button>
@@ -544,7 +796,11 @@ const Appointments = () => {
             />
           )}
         </Box>
-        <Button variant="contained" startIcon={<Event />}>
+        <Button 
+          variant="contained" 
+          startIcon={<Event />}
+          onClick={handleOpenScheduleDialog}
+        >
           Schedule New
         </Button>
       </Box>
@@ -782,6 +1038,440 @@ const Appointments = () => {
           </Button>
           <Button onClick={handleCancelAppointment} color="error" variant="contained">
             Yes, Cancel Appointment
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule New Appointment Dialog */}
+      <Dialog 
+        open={scheduleDialogOpen} 
+        onClose={() => !submitting && setScheduleDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Event color="primary" />
+            <Typography variant="h6">Schedule New Appointment</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Grid container spacing={3}>
+            {/* Patient Information */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="primary" gutterBottom>
+                Patient Information
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Patient Name"
+                required
+                value={newAppointment.patientName}
+                onChange={(e) => handleFormChange('patientName', e.target.value)}
+                error={!!formErrors.patientName}
+                helperText={formErrors.patientName}
+                disabled={submitting}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Patient ID (Optional)"
+                value={newAppointment.patientId}
+                onChange={(e) => handleFormChange('patientId', e.target.value)}
+                disabled={submitting}
+                helperText="Leave empty to auto-generate"
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                required
+                value={newAppointment.patientPhone}
+                onChange={(e) => handleFormChange('patientPhone', e.target.value)}
+                error={!!formErrors.patientPhone}
+                helperText={formErrors.patientPhone}
+                disabled={submitting}
+                placeholder="+1 234-567-8900"
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Email"
+                type="email"
+                required
+                value={newAppointment.patientEmail}
+                onChange={(e) => handleFormChange('patientEmail', e.target.value)}
+                error={!!formErrors.patientEmail}
+                helperText={formErrors.patientEmail}
+                disabled={submitting}
+              />
+            </Grid>
+
+            {/* Appointment Details */}
+            <Grid item xs={12}>
+              <Typography variant="subtitle2" color="primary" gutterBottom sx={{ mt: 2 }}>
+                Appointment Details
+              </Typography>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Date"
+                type="date"
+                required
+                value={newAppointment.appointmentDate}
+                onChange={(e) => handleFormChange('appointmentDate', e.target.value)}
+                error={!!formErrors.appointmentDate}
+                helperText={formErrors.appointmentDate}
+                disabled={submitting}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  min: new Date().toISOString().split('T')[0]
+                }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Time"
+                type="time"
+                required
+                value={newAppointment.appointmentTime}
+                onChange={(e) => handleFormChange('appointmentTime', e.target.value)}
+                error={!!formErrors.appointmentTime}
+                helperText={formErrors.appointmentTime}
+                disabled={submitting}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <FormControl fullWidth>
+                <InputLabel>Appointment Type</InputLabel>
+                <Select
+                  value={newAppointment.type}
+                  label="Appointment Type"
+                  onChange={(e) => handleFormChange('type', e.target.value)}
+                  disabled={submitting}
+                >
+                  <MenuItem value="In-Person">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <LocationOn fontSize="small" />
+                      <span>In-Person</span>
+                    </Stack>
+                  </MenuItem>
+                  <MenuItem value="Video">
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <VideoCall fontSize="small" />
+                      <span>Video Call</span>
+                    </Stack>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Duration (minutes)"
+                type="number"
+                value={newAppointment.duration}
+                onChange={(e) => handleFormChange('duration', parseInt(e.target.value) || 30)}
+                disabled={submitting}
+                inputProps={{ min: 15, max: 120, step: 15 }}
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Reason for Visit"
+                required
+                value={newAppointment.reason}
+                onChange={(e) => handleFormChange('reason', e.target.value)}
+                error={!!formErrors.reason}
+                helperText={formErrors.reason}
+                disabled={submitting}
+                placeholder="e.g., Regular Checkup, Follow-up, etc."
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Additional Notes"
+                multiline
+                rows={3}
+                value={newAppointment.notes}
+                onChange={(e) => handleFormChange('notes', e.target.value)}
+                disabled={submitting}
+                placeholder="Any additional information..."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setScheduleDialogOpen(false)}
+            disabled={submitting}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleScheduleAppointment}
+            variant="contained"
+            disabled={submitting}
+            startIcon={submitting ? <CircularProgress size={20} /> : <Event />}
+          >
+            {submitting ? 'Scheduling...' : 'Schedule Appointment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* View Report Dialog */}
+      <Dialog 
+        open={reportDialogOpen} 
+        onClose={() => setReportDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center">
+              <CheckCircle color="success" />
+              <Typography variant="h6">Appointment Report & Prescription</Typography>
+            </Stack>
+            {appointmentReport && (
+              <Chip 
+                label={appointmentReport.appointmentId} 
+                color="primary" 
+                size="small"
+              />
+            )}
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          {loadingReport ? (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+              <CircularProgress />
+            </Box>
+          ) : appointmentReport ? (
+            <Grid container spacing={3}>
+              {/* Header Info */}
+              <Grid item xs={12}>
+                <Paper sx={{ p: 2, bgcolor: 'primary.50' }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Patient Name
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {appointmentReport.patient.name}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Appointment Date
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {format(parseISO(appointmentReport.appointmentDate), 'MMM dd, yyyy')} at {appointmentReport.appointmentTime}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <Typography variant="caption" color="text.secondary">
+                        Doctor
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {appointmentReport.doctor.name}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {appointmentReport.doctor.specialization}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+
+              {/* Diagnosis */}
+              {appointmentReport.diagnosis && (
+                <Grid item xs={12}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Diagnosis & Assessment
+                  </Typography>
+                  <Paper sx={{ p: 2 }}>
+                    <Typography variant="body1">
+                      {appointmentReport.diagnosis}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              )}
+
+              {/* Prescriptions */}
+              {appointmentReport.prescriptions && appointmentReport.prescriptions.length > 0 && (
+                <Grid item xs={12}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Prescriptions
+                  </Typography>
+                  {appointmentReport.prescriptions.map((prescription, index) => (
+                    <Paper key={index} sx={{ p: 2, mb: 2 }}>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Medication
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold">
+                            {prescription.medicationName}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} md={3}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Dosage
+                          </Typography>
+                          <Typography variant="body1">
+                            {prescription.dosage}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} md={3}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Frequency
+                          </Typography>
+                          <Typography variant="body1">
+                            {prescription.frequency}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6} md={3}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Duration
+                          </Typography>
+                          <Typography variant="body1">
+                            {prescription.duration}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={9}>
+                          <Typography variant="subtitle2" color="text.secondary">
+                            Instructions
+                          </Typography>
+                          <Typography variant="body1">
+                            {prescription.instructions}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </Paper>
+                  ))}
+                </Grid>
+              )}
+
+              {/* Lab Reports & Documents */}
+              {appointmentReport.reports && appointmentReport.reports.length > 0 && (
+                <Grid item xs={12}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Lab Reports & Documents
+                  </Typography>
+                  {appointmentReport.reports.map((report, index) => (
+                    <Paper key={index} sx={{ p: 2, mb: 2 }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: 'primary.main' }}>
+                          {report.fileType.includes('pdf') ? '📄' : '🖼️'}
+                        </Avatar>
+                        <Box flex={1}>
+                          <Typography variant="body1" fontWeight="bold">
+                            {report.fileName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {report.description}
+                          </Typography>
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            Uploaded: {format(parseISO(report.uploadedAt), 'MMM dd, yyyy HH:mm')} • 
+                            Size: {(report.fileSize / 1024).toFixed(2)} KB
+                          </Typography>
+                        </Box>
+                        <Button 
+                          variant="outlined" 
+                          size="small"
+                          onClick={() => {
+                            setSnackbar({
+                              open: true,
+                              message: 'File download feature - Coming soon',
+                              severity: 'info'
+                            });
+                          }}
+                        >
+                          Download
+                        </Button>
+                      </Stack>
+                    </Paper>
+                  ))}
+                </Grid>
+              )}
+
+              {/* Additional Notes */}
+              {appointmentReport.notes && (
+                <Grid item xs={12}>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Additional Notes
+                  </Typography>
+                  <Paper sx={{ p: 2 }}>
+                    <Typography variant="body1">
+                      {appointmentReport.notes}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              )}
+
+              {/* No content message */}
+              {!appointmentReport.diagnosis && 
+               !appointmentReport.prescriptions?.length && 
+               !appointmentReport.reports?.length && 
+               !appointmentReport.notes && (
+                <Grid item xs={12}>
+                  <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography variant="h6" color="text.secondary">
+                      No report details available
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" mt={1}>
+                      The doctor has not yet uploaded the report for this appointment
+                    </Typography>
+                  </Paper>
+                </Grid>
+              )}
+            </Grid>
+          ) : (
+            <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
+              <Typography variant="body1" color="text.secondary">
+                No report data available
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setReportDialogOpen(false)}
+          >
+            Close
+          </Button>
+          <Button 
+            variant="contained"
+            disabled={!appointmentReport}
+            onClick={() => {
+              setSnackbar({
+                open: true,
+                message: 'Print feature - Coming soon',
+                severity: 'info'
+              });
+            }}
+          >
+            Print Report
           </Button>
         </DialogActions>
       </Dialog>

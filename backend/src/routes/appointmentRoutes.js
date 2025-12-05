@@ -8,7 +8,9 @@ const {
   updateAppointment,
   cancelAppointment,
   getVideoCallLink,
-  completeAppointment
+  completeAppointment,
+  addReport,
+  getAppointmentReport
 } = require('../controllers/appointmentController');
 
 // Appointment routes
@@ -23,5 +25,9 @@ router.get('/:id/video-call', protect, getVideoCallLink);
 
 // Complete appointment
 router.put('/:id/complete', protect, authorize('doctor', 'admin'), completeAppointment);
+
+// Reports and prescriptions
+router.post('/:id/reports', protect, authorize('doctor', 'admin'), addReport);
+router.get('/:id/report', protect, getAppointmentReport);
 
 module.exports = router;
