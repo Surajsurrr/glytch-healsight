@@ -53,6 +53,8 @@ const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [error, setError] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
@@ -588,13 +590,26 @@ const Appointments = () => {
       apt.reason?.toLowerCase().includes(searchQuery.toLowerCase());
 
     const aptDate = parseISO(apt.appointmentDate);
-    
+
+    // Date range filtering (if provided)
+    let withinRange = true;
+    if (startDate) {
+      const s = new Date(startDate);
+      s.setHours(0,0,0,0);
+      withinRange = withinRange && (aptDate >= s);
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23,59,59,999);
+      withinRange = withinRange && (aptDate <= e);
+    }
+
     if (tabValue === 0) {
       // Upcoming - scheduled and in future
-      return matchesSearch && isFuture(aptDate) && apt.status !== 'cancelled';
+      return matchesSearch && withinRange && isFuture(aptDate) && apt.status !== 'cancelled';
     } else {
       // Past - completed, cancelled, or past date
-      return matchesSearch && (isPast(aptDate) || apt.status === 'completed' || apt.status === 'cancelled');
+      return matchesSearch && withinRange && (isPast(aptDate) || apt.status === 'completed' || apt.status === 'cancelled');
     }
   });
 
@@ -857,19 +872,45 @@ const Appointments = () => {
 
       {/* Search Bar */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Search by patient name, appointment ID, or reason..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              placeholder="Search by patient name, appointment ID, or reason..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={6} sm={3} md={3}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Start date"
+              InputLabelProps={{ shrink: true }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </Grid>
+
+          <Grid item xs={6} sm={3} md={3}>
+            <TextField
+              fullWidth
+              type="date"
+              label="End date"
+              InputLabelProps={{ shrink: true }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </Grid>
+        </Grid>
       </Paper>
 
       {/* Tabs */}

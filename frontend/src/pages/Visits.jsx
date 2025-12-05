@@ -63,6 +63,8 @@ const Visits = () => {
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [selectedVisit, setSelectedVisit] = useState(null);
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
   const [addVisitDialogOpen, setAddVisitDialogOpen] = useState(false);
@@ -304,12 +306,29 @@ const Visits = () => {
     });
   };
 
-  const filteredVisits = visits.filter(visit => 
-    !searchQuery || 
-    visit.patient?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    visit.visitId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    visit.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredVisits = visits.filter(visit => {
+    const matchesSearch = !searchQuery || 
+      visit.patient?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      visit.visitId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      visit.diagnosis?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const vDate = new Date(visit.visitDate);
+
+    // Apply date range if provided
+    let withinRange = true;
+    if (startDate) {
+      const s = new Date(startDate);
+      s.setHours(0,0,0,0);
+      withinRange = withinRange && (vDate >= s);
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      e.setHours(23,59,59,999);
+      withinRange = withinRange && (vDate <= e);
+    }
+
+    return matchesSearch && withinRange;
+  });
 
   const recentVisits = filteredVisits.filter(v => {
     const visitDate = new Date(v.visitDate);
@@ -439,19 +458,45 @@ const Visits = () => {
 
       {/* Search Bar */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <TextField
-          fullWidth
-          placeholder="Search by patient name, visit ID, or diagnosis..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={6}>
+            <TextField
+              fullWidth
+              placeholder="Search by patient name, visit ID, or diagnosis..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Grid>
+
+          <Grid item xs={6} sm={3} md={3}>
+            <TextField
+              fullWidth
+              type="date"
+              label="Start date"
+              InputLabelProps={{ shrink: true }}
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </Grid>
+
+          <Grid item xs={6} sm={3} md={3}>
+            <TextField
+              fullWidth
+              type="date"
+              label="End date"
+              InputLabelProps={{ shrink: true }}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </Grid>
+        </Grid>
       </Paper>
 
       {/* Tabs */}
