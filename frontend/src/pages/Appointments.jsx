@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -17,7 +18,12 @@ import {
   TextField,
   InputAdornment,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar
 } from '@mui/material';
 import {
   CalendarToday,
@@ -37,11 +43,17 @@ import { format, isPast, isFuture, parseISO } from 'date-fns';
 import api from '../utils/api';
 
 const Appointments = () => {
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [usingMockData, setUsingMockData] = useState(false);
 
   useEffect(() => {
     fetchAppointments();
@@ -60,16 +72,130 @@ const Appointments = () => {
       // If backend returns placeholder, use mock data
       if (appointmentsData.length === 0 || typeof appointmentsData[0] === 'string') {
         setAppointments(getMockAppointments());
+        setUsingMockData(true);
       } else {
         setAppointments(appointmentsData);
+        setUsingMockData(false);
       }
       setError(null);
     } catch (err) {
       console.error('Error fetching appointments:', err);
       setError('Using sample data - backend not fully connected');
       setAppointments(getMockAppointments());
+      setUsingMockData(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewDetails = async (appointmentId) => {
+    try {
+      // If using mock data, find the appointment locally
+      if (usingMockData) {
+        const appointment = appointments.find(apt => apt._id === appointmentId);
+        if (appointment) {
+          setSelectedAppointment(appointment);
+          setDetailsDialogOpen(true);
+        } else {
+          setSnackbar({ 
+            open: true, 
+            message: 'Appointment not found', 
+            severity: 'error' 
+          });
+        }
+        return;
+      }
+
+      // Otherwise fetch from backend
+      const response = await api.get(`/appointments/${appointmentId}`);
+      setSelectedAppointment(response.data.data);
+      setDetailsDialogOpen(true);
+    } catch (err) {
+      console.error('Error fetching appointment details:', err);
+      setSnackbar({ 
+        open: true, 
+        message: 'Could not load appointment details', 
+        severity: 'error' 
+      });
+    }
+  };
+
+  const handleJoinCall = async (appointmentId) => {
+    try {
+      // If using mock data, generate a mock room ID
+      if (usingMockData) {
+        const appointment = appointments.find(apt => apt._id === appointmentId);
+        if (appointment) {
+          const mockRoomId = `mock_room_${appointmentId}_${Date.now()}`;
+          navigate(`/video-call/${mockRoomId}`);
+        } else {
+          setSnackbar({ 
+            open: true, 
+            message: 'Appointment not found', 
+            severity: 'error' 
+          });
+        }
+        return;
+      }
+
+      // Otherwise fetch from backend
+      const response = await api.get(`/appointments/${appointmentId}/video-call`);
+      const { roomId } = response.data.data;
+      
+      // Navigate to video call page
+      navigate(`/video-call/${roomId}`);
+    } catch (err) {
+      console.error('Error joining call:', err);
+      setSnackbar({ 
+        open: true, 
+        message: 'Could not start video call', 
+        severity: 'error' 
+      });
+    }
+  };
+
+  const handleCancelAppointment = async () => {
+    try {
+      // If using mock data, just update locally
+      if (usingMockData) {
+        setAppointments(prev => 
+          prev.map(apt => 
+            apt._id === selectedAppointment._id 
+              ? { ...apt, status: 'cancelled' }
+              : apt
+          )
+        );
+        setSnackbar({ 
+          open: true, 
+          message: 'Appointment cancelled successfully (mock mode)', 
+          severity: 'success' 
+        });
+        setCancelDialogOpen(false);
+        setSelectedAppointment(null);
+        return;
+      }
+
+      // Otherwise call backend
+      await api.delete(`/appointments/${selectedAppointment._id}`);
+      
+      setSnackbar({ 
+        open: true, 
+        message: 'Appointment cancelled successfully', 
+        severity: 'success' 
+      });
+      
+      setCancelDialogOpen(false);
+      setSelectedAppointment(null);
+      
+      // Refresh appointments
+      fetchAppointments();
+    } catch (err) {
+      console.error('Error cancelling appointment:', err);
+      setSnackbar({ 
+        open: true, 
+        message: 'Could not cancel appointment', 
+        severity: 'error' 
+      });
     }
   };
 
@@ -356,6 +482,7 @@ const Appointments = () => {
                       size="small"
                       fullWidth
                       startIcon={appointment.type === 'Video' ? <VideoCall /> : <LocationOn />}
+                      onClick={() => appointment.type === 'Video' ? handleJoinCall(appointment._id) : handleViewDetails(appointment._id)}
                     >
                       {appointment.type === 'Video' ? 'Join Call' : 'View Details'}
                     </Button>
@@ -364,6 +491,10 @@ const Appointments = () => {
                       color="error"
                       size="small"
                       fullWidth
+                      onClick={() => {
+                        setSelectedAppointment(appointment);
+                        setCancelDialogOpen(true);
+                      }}
                     >
                       Cancel
                     </Button>
@@ -375,6 +506,7 @@ const Appointments = () => {
                     variant="outlined" 
                     size="small"
                     fullWidth
+                    onClick={() => handleViewDetails(appointment._id)}
                   >
                     View Report
                   </Button>
@@ -399,9 +531,19 @@ const Appointments = () => {
     <Box>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" fontWeight="bold">
-          Appointments
-        </Typography>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h4" fontWeight="bold">
+            Appointments
+          </Typography>
+          {usingMockData && (
+            <Chip 
+              label="Demo Mode" 
+              size="small" 
+              color="info" 
+              variant="outlined"
+            />
+          )}
+        </Box>
         <Button variant="contained" startIcon={<Event />}>
           Schedule New
         </Button>
@@ -516,6 +658,148 @@ const Appointments = () => {
           ))
         )}
       </Box>
+
+      {/* Appointment Details Dialog */}
+      <Dialog 
+        open={detailsDialogOpen} 
+        onClose={() => setDetailsDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Appointment Details
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedAppointment && (
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="overline" color="text.secondary">
+                  Patient Information
+                </Typography>
+                <Stack spacing={1} mt={1}>
+                  <Typography variant="body1">
+                    <strong>Name:</strong> {selectedAppointment.patient?.name}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Patient ID:</strong> {selectedAppointment.patient?.patientId}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Phone:</strong> {selectedAppointment.patient?.phone}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Email:</strong> {selectedAppointment.patient?.email}
+                  </Typography>
+                </Stack>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Typography variant="overline" color="text.secondary">
+                  Appointment Information
+                </Typography>
+                <Stack spacing={1} mt={1}>
+                  <Typography variant="body1">
+                    <strong>Appointment ID:</strong> {selectedAppointment.appointmentId}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Date:</strong> {format(parseISO(selectedAppointment.appointmentDate), 'MMM dd, yyyy')}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Time:</strong> {selectedAppointment.appointmentTime}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Type:</strong> {selectedAppointment.type}
+                  </Typography>
+                  <Typography variant="body1">
+                    <strong>Status:</strong> {selectedAppointment.status?.toUpperCase()}
+                  </Typography>
+                </Stack>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Typography variant="overline" color="text.secondary">
+                  Reason for Visit
+                </Typography>
+                <Typography variant="body1" mt={1}>
+                  {selectedAppointment.reason}
+                </Typography>
+              </Grid>
+              
+              {selectedAppointment.notes && (
+                <Grid item xs={12}>
+                  <Typography variant="overline" color="text.secondary">
+                    Notes
+                  </Typography>
+                  <Typography variant="body1" mt={1}>
+                    {selectedAppointment.notes}
+                  </Typography>
+                </Grid>
+              )}
+              
+              {selectedAppointment.diagnosis && (
+                <Grid item xs={12}>
+                  <Typography variant="overline" color="text.secondary">
+                    Diagnosis
+                  </Typography>
+                  <Typography variant="body1" mt={1}>
+                    {selectedAppointment.diagnosis}
+                  </Typography>
+                </Grid>
+              )}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDetailsDialogOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog 
+        open={cancelDialogOpen} 
+        onClose={() => setCancelDialogOpen(false)}
+      >
+        <DialogTitle>Cancel Appointment?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to cancel this appointment?
+          </Typography>
+          {selectedAppointment && (
+            <Box mt={2}>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Patient:</strong> {selectedAppointment.patient?.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                <strong>Date:</strong> {format(parseISO(selectedAppointment.appointmentDate), 'MMM dd, yyyy')} at {selectedAppointment.appointmentTime}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelDialogOpen(false)}>
+            No, Keep It
+          </Button>
+          <Button onClick={handleCancelAppointment} color="error" variant="contained">
+            Yes, Cancel Appointment
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

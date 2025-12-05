@@ -19,6 +19,7 @@ import Prescriptions from './pages/Prescriptions';
 import MedicalRecords from './pages/MedicalRecords';
 import AIAnalytics from './pages/AIAnalytics';
 import Profile from './pages/Profile';
+import VideoCall from './pages/VideoCall';
 import NotFound from './pages/NotFound';
 
 // Layout
@@ -48,6 +49,16 @@ function App() {
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      {/* Video call route - outside layout for fullscreen */}
+      <Route 
+        path="/video-call/:roomId" 
+        element={
+          <ProtectedRoute>
+            <VideoCall />
+          </ProtectedRoute>
+        } 
+      />
 
       {/* Protected routes */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>

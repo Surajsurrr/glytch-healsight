@@ -1,30 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
+const {
+  getAppointments,
+  getAppointment,
+  createAppointment,
+  updateAppointment,
+  cancelAppointment,
+  getVideoCallLink,
+  completeAppointment
+} = require('../controllers/appointmentController');
 
-// Get appointments
-router.get('/', protect, (req, res) => {
-  res.status(200).json({ success: true, message: 'Get appointments endpoint' });
-});
+// Appointment routes
+router.get('/', protect, getAppointments);
+router.post('/', protect, createAppointment);
+router.get('/:id', protect, getAppointment);
+router.put('/:id', protect, updateAppointment);
+router.delete('/:id', protect, cancelAppointment);
 
-// Get single appointment
-router.get('/:id', protect, (req, res) => {
-  res.status(200).json({ success: true, message: 'Get single appointment endpoint' });
-});
+// Video call link
+router.get('/:id/video-call', protect, getVideoCallLink);
 
-// Book appointment
-router.post('/', protect, (req, res) => {
-  res.status(201).json({ success: true, message: 'Book appointment endpoint' });
-});
-
-// Update appointment
-router.put('/:id', protect, (req, res) => {
-  res.status(200).json({ success: true, message: 'Update appointment endpoint' });
-});
-
-// Cancel appointment
-router.delete('/:id', protect, (req, res) => {
-  res.status(200).json({ success: true, message: 'Cancel appointment endpoint' });
-});
+// Complete appointment
+router.put('/:id/complete', protect, authorize('doctor', 'admin'), completeAppointment);
 
 module.exports = router;
