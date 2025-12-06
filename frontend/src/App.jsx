@@ -11,6 +11,13 @@ import AdminDashboard from './pages/dashboards/AdminDashboard';
 import DoctorDashboard from './pages/dashboards/DoctorDashboard';
 import PatientDashboard from './pages/dashboards/PatientDashboard';
 
+// Admin pages
+import DoctorsManagement from './pages/admin/DoctorsManagement';
+import PatientsManagement from './pages/admin/PatientsManagement';
+import AppointmentsManagement from './pages/admin/AppointmentsManagement';
+import MedicinesManagement from './pages/admin/MedicinesManagement';
+import RecordsManagement from './pages/admin/RecordsManagement';
+
 // Feature pages
 import Patients from './pages/Patients';
 import Appointments from './pages/Appointments';
@@ -63,6 +70,48 @@ function App() {
       {/* Protected routes */}
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={getDashboardByRole()} />
+        
+        {/* Admin routes */}
+        <Route 
+          path="admin/doctors" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <DoctorsManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/patients" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <PatientsManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/appointments" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AppointmentsManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/medicines" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <MedicinesManagement />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="admin/records" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <RecordsManagement />
+            </ProtectedRoute>
+          } 
+        />
         
         {/* Admin & Doctor routes */}
         <Route 

@@ -68,6 +68,32 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: function() { return this.role === 'doctor'; }
   },
+  medicalCouncilId: String,
+  yearOfExperience: Number,
+  
+  // Doctor verification fields
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: function() { return this.role === 'doctor' ? 'pending' : undefined; }
+  },
+  verificationDocuments: [{
+    documentType: {
+      type: String,
+      enum: ['degree', 'license', 'specialization', 'idProof', 'experience', 'other']
+    },
+    fileName: String,
+    fileUrl: String,
+    uploadedAt: { type: Date, default: Date.now }
+  }],
+  verificationNotes: String,
+  verifiedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  verifiedAt: Date,
+  rejectionReason: String,
+  
   department: String,
   qualifications: [String],
   consultationFee: Number,

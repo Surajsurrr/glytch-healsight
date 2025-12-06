@@ -57,20 +57,41 @@ const Layout = () => {
   };
 
   const getMenuItems = () => {
-    const commonItems = [
+    // Admin menu
+    if (user?.role === 'admin') {
+      return [
+        { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+        { text: 'Doctors', icon: <LocalHospital />, path: '/admin/doctors' },
+        { text: 'Patients', icon: <People />, path: '/admin/patients' },
+        { text: 'Appointments', icon: <Event />, path: '/admin/appointments' },
+        { text: 'Visits', icon: <LocalHospital />, path: '/visits' },
+        { text: 'Medicines', icon: <Medication />, path: '/admin/medicines' },
+        { text: 'Medical Records', icon: <Folder />, path: '/admin/records' },
+        { text: 'AI Analytics', icon: <Psychology />, path: '/ai-analytics' },
+      ];
+    }
+
+    // Doctor menu
+    if (user?.role === 'doctor') {
+      return [
+        { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+        { text: 'Patients', icon: <People />, path: '/patients' },
+        { text: 'Appointments', icon: <Event />, path: '/appointments' },
+        { text: 'Visits', icon: <LocalHospital />, path: '/visits' },
+        { text: 'Prescriptions', icon: <Medication />, path: '/prescriptions' },
+        { text: 'Medical Records', icon: <Folder />, path: '/records' },
+        { text: 'AI Analytics', icon: <Psychology />, path: '/ai-analytics' },
+      ];
+    }
+
+    // Patient menu
+    return [
       { text: 'Dashboard', icon: <Dashboard />, path: '/' },
       { text: 'Appointments', icon: <Event />, path: '/appointments' },
       { text: 'Visits', icon: <LocalHospital />, path: '/visits' },
       { text: 'Prescriptions', icon: <Medication />, path: '/prescriptions' },
       { text: 'Medical Records', icon: <Folder />, path: '/records' },
     ];
-
-    if (user?.role === 'admin' || user?.role === 'doctor') {
-      commonItems.splice(1, 0, { text: 'Patients', icon: <People />, path: '/patients' });
-      commonItems.push({ text: 'AI Analytics', icon: <Psychology />, path: '/ai-analytics' });
-    }
-
-    return commonItems;
   };
 
   const drawer = (
