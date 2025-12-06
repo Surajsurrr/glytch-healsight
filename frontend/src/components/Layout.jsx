@@ -24,6 +24,7 @@ import {
   Event,
   LocalHospital,
   Medication,
+  ShoppingCart,
   Folder,
   Psychology,
   AccountCircle,
@@ -66,6 +67,7 @@ const Layout = () => {
         { text: 'Appointments', icon: <Event />, path: '/admin/appointments' },
         { text: 'Visits', icon: <LocalHospital />, path: '/visits' },
         { text: 'Medicines', icon: <Medication />, path: '/admin/medicines' },
+        { text: 'Orders', icon: <ShoppingCart />, path: '/admin/orders' },
         { text: 'Medical Records', icon: <Folder />, path: '/admin/records' },
         { text: 'AI Analytics', icon: <Psychology />, path: '/ai-analytics' },
       ];
