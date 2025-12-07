@@ -21,6 +21,9 @@ import {
   Pagination,
   TextField,
   InputAdornment,
+  Grid,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
   Block,
@@ -36,6 +39,7 @@ const PatientsManagement = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [stats, setStats] = useState({ analytics: { patientEngagement: { totalActivePatients: 0, avgVisitsPerPatient: 0 } } });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, patient: null });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -44,6 +48,19 @@ const PatientsManagement = () => {
   useEffect(() => {
     loadPatients();
   }, [page]);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const response = await api.get('/admin/stats');
+      setStats(response.data.data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  };
 
   const loadPatients = async () => {
     setLoading(true);
@@ -110,6 +127,46 @@ const PatientsManagement = () => {
           {error}
         </Alert>
       )}
+
+      {/* Patient Engagement Metrics - moved from Admin Dashboard */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Patient Engagement Metrics
+        </Typography>
+        <Box sx={{ mt: 1 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Card sx={{ backgroundColor: '#e3f2fd', p: 2 }}>
+                <CardContent>
+                  <Typography variant="body2" color="text.secondary">
+                    Active Patients
+                  </Typography>
+                  <Typography variant="h4" fontWeight="bold" color="primary">
+                    {stats.analytics?.patientEngagement?.totalActivePatients || 0}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Card sx={{ backgroundColor: '#f3e5f5', p: 2 }}>
+                <CardContent>
+                  <Typography variant="body2" color="text.secondary">
+                    Avg Visits per Patient
+                  </Typography>
+                  <Typography variant="h4" fontWeight="bold" color="secondary">
+                    {(stats.analytics?.patientEngagement?.avgVisitsPerPatient || 0).toFixed(1)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                <strong>Engagement Rate:</strong> Higher average visits indicate better patient retention and platform engagement.
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+      </Paper>
 
       <Paper sx={{ p: 3 }}>
         <TextField

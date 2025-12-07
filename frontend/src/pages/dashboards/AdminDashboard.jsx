@@ -512,43 +512,7 @@ const AdminDashboard = () => {
 
         
 
-        {/* Patient Engagement Metrics */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Patient Engagement Metrics
-            </Typography>
-            <Box sx={{ mt: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Card sx={{ backgroundColor: '#e3f2fd', p: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Active Patients
-                    </Typography>
-                    <Typography variant="h4" fontWeight="bold" color="primary">
-                      {stats.analytics.patientEngagement.totalActivePatients || 0}
-                    </Typography>
-                  </Card>
-                </Grid>
-                <Grid item xs={6}>
-                  <Card sx={{ backgroundColor: '#f3e5f5', p: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Avg Visits per Patient
-                    </Typography>
-                    <Typography variant="h4" fontWeight="bold" color="secondary">
-                      {(stats.analytics.patientEngagement.avgVisitsPerPatient || 0).toFixed(1)}
-                    </Typography>
-                  </Card>
-                </Grid>
-                <Grid item xs={12}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                    <strong>Engagement Rate:</strong> Higher average visits indicate better patient retention and platform engagement.
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Box>
-          </Paper>
-        </Grid>
+        {/* Patient Engagement Metrics moved to Patients Management page */}
 
         
       </Grid>
