@@ -1,48 +1,44 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
+const {
+  getComprehensiveInsights,
+  getProductAnalytics,
+  getDoctorAnalytics,
+  getPatientAnalytics,
+  getScalabilityAnalysis,
+  getBusinessAnalysis,
+  getRecommendations,
+  getAIStatus
+} = require('../controllers/aiAnalyticsController');
 
-// AI service status (placeholder for your team member)
-router.get('/status', protect, (req, res) => {
-  res.status(200).json({
-    success: true,
-    data: {
-      status: 'coming_soon',
-      message: 'AI features are being developed by the team. This endpoint is reserved for future implementation.',
-      placeholder: true
-    }
-  });
-});
+// AI Analytics Routes
+router.get('/status', protect, getAIStatus);
+router.get('/insights', protect, authorize('admin'), getComprehensiveInsights);
+router.get('/products', protect, authorize('admin'), getProductAnalytics);
+router.get('/doctors', protect, authorize('admin'), getDoctorAnalytics);
+router.get('/patients', protect, authorize('admin'), getPatientAnalytics);
+router.get('/scalability', protect, authorize('admin'), getScalabilityAnalysis);
+router.get('/business', protect, authorize('admin'), getBusinessAnalysis);
+router.get('/recommendations', protect, authorize('admin'), getRecommendations);
 
-// AI prediction endpoint (placeholder)
+// Legacy placeholders for ML integration
 router.post('/predict', protect, authorize('doctor'), (req, res) => {
   res.status(501).json({
     success: false,
     error: {
       code: 'NOT_IMPLEMENTED',
-      message: 'AI prediction feature is under development. Please integrate your ML models here.'
+      message: 'ML prediction feature reserved for future integration.'
     }
   });
 });
 
-// AI insights endpoint (placeholder)
-router.get('/insights', protect, authorize('doctor'), (req, res) => {
-  res.status(501).json({
-    success: false,
-    error: {
-      code: 'NOT_IMPLEMENTED',
-      message: 'AI insights feature is under development. Dataset integration pending.'
-    }
-  });
-});
-
-// AI model training endpoint (placeholder)
 router.post('/train', protect, authorize('admin'), (req, res) => {
   res.status(501).json({
     success: false,
     error: {
       code: 'NOT_IMPLEMENTED',
-      message: 'AI model training endpoint reserved for team implementation.'
+      message: 'ML model training endpoint reserved for future integration.'
     }
   });
 });
