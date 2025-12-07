@@ -18,6 +18,7 @@ import AppointmentsManagement from './pages/admin/AppointmentsManagement';
 import MedicinesManagement from './pages/admin/MedicinesManagement';
 import OrdersManagement from './pages/admin/OrdersManagement';
 import RecordsManagement from './pages/admin/RecordsManagement';
+import MedicalRecordsManagement from './pages/admin/MedicalRecordsManagement';
 
 // Feature pages
 import Patients from './pages/Patients';
@@ -117,7 +118,7 @@ function App() {
           path="admin/records" 
           element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <RecordsManagement />
+              <MedicalRecordsManagement />
             </ProtectedRoute>
           } 
         />

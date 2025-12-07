@@ -1,8 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
+const {
+  getAllMedicalRecords,
+  aiCategorizeRecord,
+  batchAICategorize,
+  autoCategorizeAll,
+  suggestCategory,
+  getCategories,
+  getAIStats
+} = require('../controllers/medicalRecordController');
 
-// Get medical records
+// Admin routes for medical records management
+router.get('/admin/records', protect, authorize('admin'), getAllMedicalRecords);
+router.get('/admin/records/categories', protect, authorize('admin'), getCategories);
+router.get('/admin/records/stats', protect, authorize('admin'), getAIStats);
+router.post('/admin/records/suggest-category', protect, authorize('admin'), suggestCategory);
+router.post('/admin/records/:id/ai-categorize', protect, authorize('admin'), aiCategorizeRecord);
+router.post('/admin/records/batch-categorize', protect, authorize('admin'), batchAICategorize);
+router.post('/admin/records/auto-categorize-all', protect, authorize('admin'), autoCategorizeAll);
+
+// Get medical records (patient/doctor access)
 router.get('/', protect, (req, res) => {
   res.status(200).json({ success: true, message: 'Get medical records endpoint' });
 });

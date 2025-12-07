@@ -25,6 +25,52 @@ const medicalRecordSchema = new mongoose.Schema({
     required: true
   },
   
+  // AI-powered categorization fields
+  aiCategory: {
+    type: String,
+    enum: [
+      'Blood Test',
+      'Lab Report', 
+      'X-Ray',
+      'CT Scan',
+      'MRI Scan',
+      'Ultrasound',
+      'ECG/EKG',
+      'Pathology Report',
+      'Biopsy Report',
+      'Diagnosis Report',
+      'Prescription',
+      'Surgical Report',
+      'Discharge Summary',
+      'Vaccination Record',
+      'Allergy Report',
+      'Test Report',
+      'Scan Report',
+      'Medical Certificate',
+      'Other'
+    ],
+    default: 'Other'
+  },
+  
+  aiCategoryConfidence: {
+    type: Number,
+    min: 0,
+    max: 1,
+    default: 0
+  },
+  
+  aiDetectedKeywords: [String],
+  
+  isAICategorized: {
+    type: Boolean,
+    default: false
+  },
+  
+  manualCategoryOverride: {
+    type: Boolean,
+    default: false
+  },
+  
   title: {
     type: String,
     required: true
