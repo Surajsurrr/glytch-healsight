@@ -30,6 +30,7 @@ import {
   Select,
   FormHelperText
 } from '@mui/material';
+import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line } from 'recharts';
 import {
   CalendarToday,
   AccessTime,
@@ -621,6 +622,39 @@ const Appointments = () => {
     isPast(parseISO(apt.appointmentDate)) || apt.status === 'completed' || apt.status === 'cancelled'
   ).length;
 
+  const processAppointmentTrendData = () => {
+    const trendData = {};
+    const last30Days = [];
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      last30Days.push(dateStr);
+      trendData[dateStr] = { date: dateStr, scheduled: 0, completed: 0, cancelled: 0 };
+    }
+
+    appointments.forEach((apt) => {
+      if (!apt || !apt.appointmentDate) return;
+      const d = new Date(apt.appointmentDate).toISOString().split('T')[0];
+      if (trendData[d]) {
+        const status = (apt.status || '').toLowerCase();
+        if (status === 'scheduled') trendData[d].scheduled += 1;
+        else if (status === 'completed') trendData[d].completed += 1;
+        else if (status === 'cancelled') trendData[d].cancelled += 1;
+      }
+    });
+
+    return last30Days
+      .filter((_, index) => index % 3 === 0)
+      .map((date) => ({
+        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        scheduled: trendData[date].scheduled,
+        completed: trendData[date].completed,
+        cancelled: trendData[date].cancelled,
+      }));
+  };
+
   const AppointmentCard = ({ appointment }) => {
     const aptDate = parseISO(appointment.appointmentDate);
     
@@ -869,6 +903,25 @@ const Appointments = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Appointments Trend */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" fontWeight="bold" gutterBottom>
+          Appointments Trend (Last 30 Days)
+        </Typography>
+        <ResponsiveContainer width="100%" height={350}>
+          <LineChart data={processAppointmentTrendData()}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="scheduled" stroke="#2196f3" strokeWidth={2} name="Scheduled" />
+            <Line type="monotone" dataKey="completed" stroke="#4caf50" strokeWidth={2} name="Completed" />
+            <Line type="monotone" dataKey="cancelled" stroke="#f44336" strokeWidth={2} name="Cancelled" />
+          </LineChart>
+        </ResponsiveContainer>
+      </Paper>
 
       {/* Search Bar */}
       <Paper sx={{ p: 2, mb: 3 }}>

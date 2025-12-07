@@ -234,43 +234,7 @@ const AdminDashboard = () => {
     }));
   };
 
-  const processAppointmentTrendData = () => {
-    const trendData = {};
-    const last30Days = [];
-    
-    // Generate last 30 days
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      last30Days.push(dateStr);
-      trendData[dateStr] = { date: dateStr, scheduled: 0, completed: 0, cancelled: 0 };
-    }
-
-    // Fill in actual data
-    stats.analytics.appointmentsTrend.forEach(item => {
-      if (trendData[item._id.date]) {
-        const status = item._id.status.toLowerCase();
-        if (status === 'scheduled') {
-          trendData[item._id.date].scheduled = item.count;
-        } else if (status === 'completed') {
-          trendData[item._id.date].completed = item.count;
-        } else if (status === 'cancelled') {
-          trendData[item._id.date].cancelled = item.count;
-        }
-      }
-    });
-
-    // Sample every 3 days for readability
-    return last30Days
-      .filter((_, index) => index % 3 === 0)
-      .map(date => ({
-        date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        scheduled: trendData[date].scheduled,
-        completed: trendData[date].completed,
-        cancelled: trendData[date].cancelled,
-      }));
-  };
+  
 
   return (
     <Box>
@@ -546,24 +510,7 @@ const AdminDashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Top Doctors by Appointments */}
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Top 5 Most Active Doctors
-            </Typography>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stats.analytics.topDoctors}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="appointmentCount" fill="#1976d2" name="Appointments" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
+        
 
         {/* Patient Engagement Metrics */}
         <Grid item xs={12} md={6}>
@@ -603,26 +550,7 @@ const AdminDashboard = () => {
           </Paper>
         </Grid>
 
-        {/* Appointments Trend */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Appointments Trend (Last 30 Days)
-            </Typography>
-            <ResponsiveContainer width="100%" height={350}>
-              <LineChart data={processAppointmentTrendData()}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="scheduled" stroke="#2196f3" strokeWidth={2} name="Scheduled" />
-                <Line type="monotone" dataKey="completed" stroke="#4caf50" strokeWidth={2} name="Completed" />
-                <Line type="monotone" dataKey="cancelled" stroke="#f44336" strokeWidth={2} name="Cancelled" />
-              </LineChart>
-            </ResponsiveContainer>
-          </Paper>
-        </Grid>
+        
       </Grid>
 
       {/* Doctor Details Dialog */}

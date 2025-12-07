@@ -31,6 +31,7 @@ import {
   Visibility,
 } from '@mui/icons-material';
 import api from '../../utils/api';
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 
 const DoctorsManagement = () => {
   const [doctors, setDoctors] = useState([]);
@@ -40,9 +41,11 @@ const DoctorsManagement = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [stats, setStats] = useState({});
 
   useEffect(() => {
     loadDoctors();
+    loadStats();
   }, [page]);
 
   const loadDoctors = async () => {
@@ -57,6 +60,15 @@ const DoctorsManagement = () => {
       console.error('Load doctors error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await api.get('/admin/stats');
+      setStats(response.data.data || {});
+    } catch (error) {
+      console.error('Failed to load admin stats for doctors page:', error);
     }
   };
 
@@ -112,6 +124,22 @@ const DoctorsManagement = () => {
       )}
 
       <Paper sx={{ p: 3 }}>
+        {/* Top 5 Most Active Doctors */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Top 5 Most Active Doctors
+          </Typography>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={stats.analytics?.topDoctors || []}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="name" angle={-15} textAnchor="end" height={60} />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="appointmentCount" fill="#1976d2" name="Appointments" />
+            </BarChart>
+          </ResponsiveContainer>
+        </Box>
         <TextField
           fullWidth
           placeholder="Search doctors by name, email, or specialization..."
