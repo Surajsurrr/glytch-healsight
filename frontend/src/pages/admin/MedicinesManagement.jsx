@@ -347,7 +347,7 @@ const MedicinesManagement = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            Medical Store Management
+            Products Management
           </Typography>
           <Typography variant="body1" color="text.secondary">
             Manage products, inventory, and e-commerce catalog

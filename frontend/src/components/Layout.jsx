@@ -27,6 +27,7 @@ import {
   ShoppingCart,
   Folder,
   Psychology,
+  CalendarToday,
   AccountCircle,
   Logout,
 } from '@mui/icons-material';
@@ -66,7 +67,7 @@ const Layout = () => {
         { text: 'Patients', icon: <People />, path: '/admin/patients' },
         { text: 'Appointments', icon: <Event />, path: '/admin/appointments' },
         { text: 'Visits', icon: <LocalHospital />, path: '/visits' },
-        { text: 'Medicines', icon: <Medication />, path: '/admin/medicines' },
+        { text: 'Products', icon: <Medication />, path: '/admin/products' },
         { text: 'Orders', icon: <ShoppingCart />, path: '/admin/orders' },
         { text: 'Medical Records', icon: <Folder />, path: '/admin/records' },
         { text: 'AI Analytics', icon: <Psychology />, path: '/ai-analytics' },
@@ -90,9 +91,9 @@ const Layout = () => {
     return [
       { text: 'Dashboard', icon: <Dashboard />, path: '/' },
       { text: 'Appointments', icon: <Event />, path: '/appointments' },
-      { text: 'Visits', icon: <LocalHospital />, path: '/visits' },
+      { text: 'Book Appointment', icon: <CalendarToday />, path: '/appointments/book' },
       { text: 'Prescriptions', icon: <Medication />, path: '/prescriptions' },
-      { text: 'Medical Records', icon: <Folder />, path: '/records' },
+      { text: 'Medical Records', icon: <Folder />, path: '/medical-records' },
     ];
   };
 

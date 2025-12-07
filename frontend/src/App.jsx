@@ -26,6 +26,8 @@ import Appointments from './pages/Appointments';
 import Visits from './pages/Visits';
 import Prescriptions from './pages/Prescriptions';
 import MedicalRecords from './pages/MedicalRecords';
+import PatientMedicalRecords from './pages/PatientMedicalRecords';
+import BookAppointment from './pages/BookAppointment';
 import AIAnalytics from './pages/AIAnalytics';
 import Profile from './pages/Profile';
 import VideoCall from './pages/VideoCall';
@@ -99,7 +101,7 @@ function App() {
           } 
         />
         <Route 
-          path="admin/medicines" 
+          path="admin/products" 
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <MedicinesManagement />
@@ -135,9 +137,11 @@ function App() {
         
         {/* All authenticated users */}
         <Route path="appointments" element={<Appointments />} />
+        <Route path="appointments/book" element={<BookAppointment />} />
         <Route path="visits" element={<Visits />} />
         <Route path="prescriptions" element={<Prescriptions />} />
         <Route path="records" element={<MedicalRecords />} />
+        <Route path="medical-records" element={<PatientMedicalRecords />} />
         <Route path="profile" element={<Profile />} />
         
         {/* AI Analytics - placeholder for your team */}

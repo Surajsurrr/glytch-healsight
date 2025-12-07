@@ -14,6 +14,7 @@ import {
   Chip,
   Button,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import {
   Event,
@@ -25,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 const StatCard = ({ title, value, icon, color }) => (
   <Card sx={{ height: '100%' }}>
@@ -57,6 +59,7 @@ const StatCard = ({ title, value, icon, color }) => (
 
 const PatientDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     upcomingAppointments: 0,
     totalVisits: 0,
@@ -64,8 +67,15 @@ const PatientDashboard = () => {
     lastVisit: null,
   });
 
+  const [appointments, setAppointments] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState(false);
+
   useEffect(() => {
     loadStats();
+    loadAppointments();
+    loadPrescriptions();
   }, []);
 
   const loadStats = async () => {
@@ -77,15 +87,55 @@ const PatientDashboard = () => {
     }
   };
 
-  const upcomingAppointments = [
-    { id: 1, doctor: 'Dr. John Smith', specialty: 'Cardiologist', date: '2025-12-10', time: '10:00 AM', status: 'confirmed' },
-    { id: 2, doctor: 'Dr. Sarah Wilson', specialty: 'General Physician', date: '2025-12-15', time: '02:30 PM', status: 'scheduled' },
-  ];
+  const loadAppointments = async () => {
+    setLoadingAppointments(true);
+    try {
+      // Try patient-specific endpoint first, fallback to generic
+      let res;
+      try {
+        res = await api.get('/appointments/patient');
+      } catch (e) {
+        res = await api.get('/appointments');
+      }
+      const data = res.data?.data || res.data || [];
+      setAppointments(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load appointments:', error);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
 
-  const activePrescriptions = [
-    { id: 1, medication: 'Paracetamol 500mg', frequency: 'Twice daily', daysLeft: 5 },
-    { id: 2, medication: 'Vitamin D', frequency: 'Once daily', daysLeft: 28 },
-  ];
+  const loadPrescriptions = async () => {
+    setLoadingPrescriptions(true);
+    try {
+      let res;
+      try {
+        res = await api.get('/prescriptions/patient');
+      } catch (e) {
+        res = await api.get('/prescriptions');
+      }
+      const data = res.data?.data || res.data || [];
+      setPrescriptions(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Failed to load prescriptions:', error);
+    } finally {
+      setLoadingPrescriptions(false);
+    }
+  };
+
+  // Use API-loaded data; provide a small fallback shape when API returns empty
+  const upcomingAppointments = appointments.length
+    ? appointments
+    : [
+        { id: 1, doctor: 'Dr. John Smith', specialty: 'Cardiologist', date: '2025-12-10', time: '10:00 AM', status: 'confirmed' },
+      ];
+
+  const activePrescriptions = prescriptions.length
+    ? prescriptions
+    : [
+        { id: 1, medication: 'Paracetamol 500mg', frequency: 'Twice daily', daysLeft: 5 },
+      ];
 
   return (
     <Box>
@@ -144,13 +194,18 @@ const PatientDashboard = () => {
               <Typography variant="h6" fontWeight="bold">
                 Upcoming Appointments
               </Typography>
-              <Button variant="outlined" size="small">
+              <Button variant="outlined" size="small" onClick={() => navigate('/appointments/book') }>
                 Book New
               </Button>
             </Box>
             <List>
-              {upcomingAppointments.map((appointment) => (
-                <Box key={appointment.id}>
+              {loadingAppointments ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : (
+                upcomingAppointments.map((appointment) => (
+                <Box key={appointment._id || appointment.id}>
                   <ListItem
                     sx={{
                       backgroundColor: 'background.default',
@@ -160,11 +215,15 @@ const PatientDashboard = () => {
                     secondaryAction={
                       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
                         <Chip
-                          label={appointment.status}
+                          label={appointment.status || appointment.status}
                           size="small"
                           color={appointment.status === 'confirmed' ? 'success' : 'warning'}
                         />
-                        <Button variant="text" size="small">
+                        <Button
+                          variant="text"
+                          size="small"
+                          onClick={() => navigate(`/appointments/${appointment._id || appointment.id}`)}
+                        >
                           View Details
                         </Button>
                       </Box>
@@ -184,14 +243,15 @@ const PatientDashboard = () => {
                           </Typography>
                           <br />
                           <Typography variant="body2" component="span" color="text.secondary">
-                            {appointment.date} at {appointment.time}
+                            {appointment.date ? `${appointment.date} at ${appointment.time || ''}` : appointment.startTime || ''}
                           </Typography>
                         </>
                       }
                     />
                   </ListItem>
                 </Box>
-              ))}
+                ))
+              )}
             </List>
           </Paper>
 
@@ -200,9 +260,14 @@ const PatientDashboard = () => {
               Active Prescriptions
             </Typography>
             <List>
-              {activePrescriptions.map((prescription) => (
+              {loadingPrescriptions ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                  <CircularProgress size={28} />
+                </Box>
+              ) : (
+                activePrescriptions.map((prescription) => (
                 <ListItem
-                  key={prescription.id}
+                  key={prescription._id || prescription.id}
                   sx={{
                     backgroundColor: 'background.default',
                     borderRadius: 1,
@@ -215,11 +280,12 @@ const PatientDashboard = () => {
                     </Avatar>
                   </ListItemAvatar>
                   <ListItemText
-                    primary={prescription.medication}
-                    secondary={`${prescription.frequency} • ${prescription.daysLeft} days remaining`}
+                    primary={prescription.medication || prescription.name}
+                    secondary={prescription.frequency ? `${prescription.frequency} • ${prescription.daysLeft || ''} days remaining` : prescription.instructions}
                   />
                 </ListItem>
-              ))}
+                ))
+              )}
             </List>
           </Paper>
         </Grid>
@@ -230,13 +296,13 @@ const PatientDashboard = () => {
               Quick Actions
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Button variant="contained" fullWidth startIcon={<CalendarToday />}>
+              <Button variant="contained" fullWidth startIcon={<CalendarToday />} onClick={() => navigate('/appointments/book')}>
                 Book Appointment
               </Button>
-              <Button variant="outlined" fullWidth startIcon={<Folder />}>
+              <Button variant="outlined" fullWidth startIcon={<Folder />} onClick={() => navigate('/medical-records')}>
                 Medical Records
               </Button>
-              <Button variant="outlined" fullWidth startIcon={<Medication />}>
+              <Button variant="outlined" fullWidth startIcon={<Medication />} onClick={() => navigate('/prescriptions')}>
                 Prescriptions
               </Button>
             </Box>
