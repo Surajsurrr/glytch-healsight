@@ -90,6 +90,7 @@ const Layout = () => {
     // Patient menu
     return [
       { text: 'Dashboard', icon: <Dashboard />, path: '/' },
+      { text: 'Medicines', icon: <Medication />, path: '/products' },
       { text: 'Appointments', icon: <Event />, path: '/appointments' },
       { text: 'Book Appointment', icon: <CalendarToday />, path: '/appointments/book' },
       { text: 'Prescriptions', icon: <Medication />, path: '/prescriptions' },

@@ -28,6 +28,7 @@ import Prescriptions from './pages/Prescriptions';
 import MedicalRecords from './pages/MedicalRecords';
 import PatientMedicalRecords from './pages/PatientMedicalRecords';
 import BookAppointment from './pages/BookAppointment';
+import Products from './pages/Products';
 import AIAnalytics from './pages/AIAnalytics';
 import Profile from './pages/Profile';
 import VideoCall from './pages/VideoCall';
@@ -139,6 +140,7 @@ function App() {
         <Route path="appointments" element={<Appointments />} />
         <Route path="appointments/book" element={<BookAppointment />} />
         <Route path="visits" element={<Visits />} />
+        <Route path="products" element={<Products />} />
         <Route path="prescriptions" element={<Prescriptions />} />
         <Route path="records" element={<MedicalRecords />} />
         <Route path="medical-records" element={<PatientMedicalRecords />} />

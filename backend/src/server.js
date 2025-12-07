@@ -30,6 +30,7 @@ const searchRoutes = require('./routes/searchRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const productRoutes = require('./routes/productRoutes');
+const publicProductRoutes = require('./routes/publicProductRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 
 // Initialize Express app
@@ -87,6 +88,7 @@ app.use(`/api/${API_VERSION}/search`, searchRoutes);
 app.use(`/api/${API_VERSION}/ai`, aiRoutes);
 app.use(`/api/${API_VERSION}/admin`, adminRoutes);
 app.use(`/api/${API_VERSION}/admin/products`, productRoutes);
+app.use(`/api/${API_VERSION}/products`, publicProductRoutes);
 app.use(`/api/${API_VERSION}/admin/orders`, orderRoutes);
 
 // 404 handler
