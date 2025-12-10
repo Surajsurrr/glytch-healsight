@@ -32,6 +32,12 @@ const Register = () => {
     gender: '',
     specialization: '',
     licenseNumber: '',
+    yearOfExperience: '',
+  });
+  const [doctorDocuments, setDoctorDocuments] = useState({
+    qualificationCertificate: null,
+    specializationCertificate: null,
+    experienceProof: null,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -43,6 +49,16 @@ const Register = () => {
       [e.target.name]: e.target.value,
     });
     setError('');
+  };
+
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (files && files[0]) {
+      setDoctorDocuments({
+        ...doctorDocuments,
+        [name]: files[0],
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -65,20 +81,69 @@ const Register = () => {
       return;
     }
 
+    if (formData.role === 'doctor' && (!doctorDocuments.qualificationCertificate || !doctorDocuments.specializationCertificate || !doctorDocuments.experienceProof)) {
+      setError('Please upload all required documents (Qualification Certificate, Specialization Certificate, and Experience Proof)');
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Remove confirmPassword and filter out empty optional fields
       const { confirmPassword, ...dataToSend } = formData;
       
-      // Remove empty strings to avoid validation errors
-      Object.keys(dataToSend).forEach(key => {
-        if (dataToSend[key] === '' || dataToSend[key] === null || dataToSend[key] === undefined) {
-          delete dataToSend[key];
+      // For doctors, prepare FormData to include file uploads
+      if (formData.role === 'doctor') {
+        const formDataToSend = new FormData();
+        
+        // Append text fields
+        Object.keys(dataToSend).forEach(key => {
+          if (dataToSend[key] !== '' && dataToSend[key] !== null && dataToSend[key] !== undefined) {
+            formDataToSend.append(key, dataToSend[key]);
+          }
+        });
+        
+        // Append documents with metadata
+        const documents = [];
+        if (doctorDocuments.qualificationCertificate) {
+          documents.push({
+            documentType: 'degree',
+            fileName: doctorDocuments.qualificationCertificate.name,
+            fileUrl: 'pending-upload' // This will be handled by backend
+          });
+          formDataToSend.append('qualificationCertificate', doctorDocuments.qualificationCertificate);
         }
-      });
+        if (doctorDocuments.specializationCertificate) {
+          documents.push({
+            documentType: 'specialization',
+            fileName: doctorDocuments.specializationCertificate.name,
+            fileUrl: 'pending-upload'
+          });
+          formDataToSend.append('specializationCertificate', doctorDocuments.specializationCertificate);
+        }
+        if (doctorDocuments.experienceProof) {
+          documents.push({
+            documentType: 'experience',
+            fileName: doctorDocuments.experienceProof.name,
+            fileUrl: 'pending-upload'
+          });
+          formDataToSend.append('experienceProof', doctorDocuments.experienceProof);
+        }
+        
+        formDataToSend.append('verificationDocuments', JSON.stringify(documents));
+        
+        await register(formDataToSend, true); // Pass true to indicate multipart form data
+      } else {
+        // Remove empty strings to avoid validation errors
+        Object.keys(dataToSend).forEach(key => {
+          if (dataToSend[key] === '' || dataToSend[key] === null || dataToSend[key] === undefined) {
+            delete dataToSend[key];
+          }
+        });
+        
+        await register(dataToSend);
+      }
       
-      await register(dataToSend);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.error?.message || 'Registration failed. Please try again.');
@@ -217,6 +282,7 @@ const Register = () => {
                       name="specialization"
                       value={formData.specialization}
                       onChange={handleChange}
+                      placeholder="e.g., Cardiologist, Neurologist"
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -228,6 +294,93 @@ const Register = () => {
                       value={formData.licenseNumber}
                       onChange={handleChange}
                     />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Years of Experience"
+                      name="yearOfExperience"
+                      type="number"
+                      value={formData.yearOfExperience}
+                      onChange={handleChange}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                      Required Documents for Verification
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      fullWidth
+                      sx={{ py: 1.5 }}
+                    >
+                      {doctorDocuments.qualificationCertificate ? '✓ Qualification Cert' : 'Upload Qualification *'}
+                      <input
+                        type="file"
+                        name="qualificationCertificate"
+                        hidden
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileChange}
+                      />
+                    </Button>
+                    {doctorDocuments.qualificationCertificate && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {doctorDocuments.qualificationCertificate.name}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      fullWidth
+                      sx={{ py: 1.5 }}
+                    >
+                      {doctorDocuments.specializationCertificate ? '✓ Specialization Cert' : 'Upload Specialization *'}
+                      <input
+                        type="file"
+                        name="specializationCertificate"
+                        hidden
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileChange}
+                      />
+                    </Button>
+                    {doctorDocuments.specializationCertificate && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {doctorDocuments.specializationCertificate.name}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      fullWidth
+                      sx={{ py: 1.5 }}
+                    >
+                      {doctorDocuments.experienceProof ? '✓ Experience Proof' : 'Upload Experience *'}
+                      <input
+                        type="file"
+                        name="experienceProof"
+                        hidden
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={handleFileChange}
+                      />
+                    </Button>
+                    {doctorDocuments.experienceProof && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {doctorDocuments.experienceProof.name}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Alert severity="info" sx={{ mt: 1 }}>
+                      Your account will be pending verification until an admin reviews your documents.
+                    </Alert>
                   </Grid>
                 </>
               )}

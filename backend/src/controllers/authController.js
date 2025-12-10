@@ -22,6 +22,41 @@ const register = async (req, res, next) => {
       });
     }
 
+    // Handle doctor document uploads
+    if (userData.role === 'doctor' && req.files) {
+      const verificationDocuments = [];
+      
+      if (req.files.qualificationCertificate) {
+        verificationDocuments.push({
+          documentType: 'degree',
+          fileName: req.files.qualificationCertificate[0].originalname,
+          fileUrl: req.files.qualificationCertificate[0].path || `uploads/${req.files.qualificationCertificate[0].filename}`,
+          uploadedAt: new Date()
+        });
+      }
+      
+      if (req.files.specializationCertificate) {
+        verificationDocuments.push({
+          documentType: 'specialization',
+          fileName: req.files.specializationCertificate[0].originalname,
+          fileUrl: req.files.specializationCertificate[0].path || `uploads/${req.files.specializationCertificate[0].filename}`,
+          uploadedAt: new Date()
+        });
+      }
+      
+      if (req.files.experienceProof) {
+        verificationDocuments.push({
+          documentType: 'experience',
+          fileName: req.files.experienceProof[0].originalname,
+          fileUrl: req.files.experienceProof[0].path || `uploads/${req.files.experienceProof[0].filename}`,
+          uploadedAt: new Date()
+        });
+      }
+      
+      userData.verificationDocuments = verificationDocuments;
+      userData.verificationStatus = 'pending';
+    }
+
     // Create user
     const user = await User.create(userData);
 
@@ -55,7 +90,7 @@ const register = async (req, res, next) => {
       action: 'REGISTER',
       resource: 'User',
       resourceId: user._id,
-      description: `New user registered: ${user.email}`,
+      description: `New user registered: ${user.email}${user.role === 'doctor' ? ' (pending verification)' : ''}`,
       status: 'success',
       ipAddress: req.ip,
       userAgent: req.get('user-agent')
