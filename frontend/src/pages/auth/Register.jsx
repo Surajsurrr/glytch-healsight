@@ -33,6 +33,11 @@ const Register = () => {
     specialization: '',
     licenseNumber: '',
     yearOfExperience: '',
+    // Pharmacy specific
+    pharmacyName: '',
+    pharmacyLicenseNumber: '',
+    pharmacyRegistrationNumber: '',
+    pharmacyAddress: '',
   });
   const [doctorDocuments, setDoctorDocuments] = useState({
     qualificationCertificate: null,
@@ -78,6 +83,11 @@ const Register = () => {
 
     if (formData.role === 'doctor' && (!formData.specialization || !formData.licenseNumber)) {
       setError('Specialization and License Number are required for doctors');
+      return;
+    }
+
+    if (formData.role === 'pharmacy' && (!formData.pharmacyName || !formData.pharmacyLicenseNumber || !formData.pharmacyAddress)) {
+      setError('Please provide Pharmacy Name, License Number and Address');
       return;
     }
 
@@ -232,8 +242,10 @@ const Register = () => {
                   value={formData.role}
                   onChange={handleChange}
                 >
-                  <MenuItem value="patient">Patient</MenuItem>
                   <MenuItem value="doctor">Doctor</MenuItem>
+                  <MenuItem value="patient">Patient</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="pharmacy">Pharmacy</MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -245,32 +257,81 @@ const Register = () => {
                   onChange={handleChange}
                 />
               </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  label="Date of Birth"
-                  name="dateOfBirth"
-                  type="date"
-                  InputLabelProps={{ shrink: true }}
-                  value={formData.dateOfBirth}
-                  onChange={handleChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  fullWidth
-                  select
-                  label="Gender"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                >
-                  <MenuItem value="">Select</MenuItem>
-                  <MenuItem value="male">Male</MenuItem>
-                  <MenuItem value="female">Female</MenuItem>
-                  <MenuItem value="other">Other</MenuItem>
-                </TextField>
-              </Grid>
+              {formData.role !== 'pharmacy' ? (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      label="Date of Birth"
+                      name="dateOfBirth"
+                      type="date"
+                      InputLabelProps={{ shrink: true }}
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      fullWidth
+                      select
+                      label="Gender"
+                      name="gender"
+                      value={formData.gender}
+                      onChange={handleChange}
+                    >
+                      <MenuItem value="">Select</MenuItem>
+                      <MenuItem value="male">Male</MenuItem>
+                      <MenuItem value="female">Female</MenuItem>
+                      <MenuItem value="other">Other</MenuItem>
+                    </TextField>
+                  </Grid>
+                </>
+              ) : (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Pharmacy Name"
+                      name="pharmacyName"
+                      value={formData.pharmacyName}
+                      onChange={handleChange}
+                      placeholder="Registered pharmacy / organization name"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Pharmacy License Number"
+                      name="pharmacyLicenseNumber"
+                      value={formData.pharmacyLicenseNumber}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      fullWidth
+                      label="Registration Number (GST/Company Reg)"
+                      name="pharmacyRegistrationNumber"
+                      value={formData.pharmacyRegistrationNumber}
+                      onChange={handleChange}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <TextField
+                      required
+                      fullWidth
+                      label="Pharmacy Address"
+                      name="pharmacyAddress"
+                      value={formData.pharmacyAddress}
+                      onChange={handleChange}
+                      multiline
+                      minRows={2}
+                    />
+                  </Grid>
+                </>
+              )}
 
               {formData.role === 'doctor' && (
                 <>
